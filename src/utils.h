@@ -6,5 +6,6 @@
 #define MULTIGRID_UTILS_H
 
 #define FIELD_DIM 2
+#define A_LAT 1.0 // lattice constant
 
 #endif //MULTIGRID_UTILS_H

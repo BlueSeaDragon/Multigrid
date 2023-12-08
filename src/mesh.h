@@ -12,11 +12,15 @@ public:
     Mesh(int dim);
 
     Eigen::Vector4i get_neighbours(int const& index);
+    // index of neighbour shifted in t and x
     int get_neighbour(int const& index, int const& direction_t, int const& direction_x);
 
+    // number of grid points
     int get_size();
-
-
+    // dimension of square grid
+    int get_dim();
+    // location index of 2-vector x
+    int loc_index(Eigen::Vector2i x);
 
 private:
     int _dim;
