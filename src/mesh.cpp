@@ -15,10 +15,11 @@ Eigen::Vector4i Mesh::get_neighbours(int const& index) {
                 get_neighbour(index,0 , 1),
             get_neighbour(index, -1, 0),
             get_neighbour(index, 0, -1);
+    return output;
 }
 
-int Mesh::get_size() { return _dim*_dim;}
+int Mesh::get_size() const { return _dim*_dim;}
 
-int Mesh::get_dim() {return _dim;}
+int Mesh::get_dim() const {return _dim;}
 
-int Mesh::loc_index(Eigen::Vector2i x) {return x(0)*_dim + x(1);}
+int Mesh::loc_index(Eigen::Vector2i x) const {return x(0)*_dim + x(1);}

@@ -68,7 +68,7 @@ void conjugate_gradient(const MatrixType& mat, const Rhs& rhs, Dest& x,
   Index i = 0;
   while(i < maxIters)
   {
-    tmp.noalias() = mat * p;                    // the bottleneck of the algorithm
+    tmp.noalias() = mat * p;                    // the bottleneck of the algorithmW
 
     Scalar alpha = absNew / p.dot(tmp);         // the amount we travel on dir
     x += alpha * p;                             // update solution
