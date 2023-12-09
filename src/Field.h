@@ -27,7 +27,7 @@ public:
 
 
     //construct boson field given A
-    BosonField(Eigen::VectorXd  A, Mesh mesh): _A(std::move(A)), _mesh(mesh) {};
+    BosonField(Eigen::VectorXd  A, Mesh mesh): A_(std::move(A)), _mesh(mesh) {};
     BosonField(Mesh mesh): _mesh(mesh) { init_uniform(0.);};
 
     // gauge invariant initialisation where the magnitude per link = exp(i*a*A)
@@ -46,11 +46,12 @@ public:
     static int const TDirection = 0;
     static int const XDirection = 1;
 
+    typedef Eigen::VectorXd vector_type;
     //std::complex<double> operator()(int index, int direction){return _values[2*index + direction];}
     Mesh get_mesh() {return _mesh;};
 
 protected:
-    Eigen::VectorXd _A;
+    vector_type A_;
     Mesh _mesh;
 };
 
@@ -71,11 +72,13 @@ public:
     std::complex<double> Psi(Eigen::VectorXi location, int spinor_idx);
     std::complex<double> Psi(int location, int spinor_idx);
 
-    Eigen::VectorXcd get_data(){return _values;}
+    typedef Eigen::VectorXcd vector_type;
+
+    vector_type get_data(){return _values;}
     Mesh get_mesh() {return _mesh;};
 
 private:
-    Eigen::VectorXcd _values;
+    vector_type _values;
     Mesh _mesh;
 };
 

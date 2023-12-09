@@ -137,6 +137,7 @@ DiracOperator::DiracOperator(Mesh *mesh, const double &mass, BosonField* b_field
     }
      */
     _big_d.setFromTriplets(triplets.begin(), triplets.end());
+    _big_d.makeCompressed();
     _big_d.finalize();
 }
 
@@ -154,4 +155,18 @@ DirectSolver::DirectSolver(const DiracOperator &D): _dirac_matrix(D.get_matrix()
 
 FermionField DirectSolver::solve(FermionField target) {
     return {_solver.solve(target.get_data()), target.get_mesh()};
+}
+
+
+
+CGSolver::CGSolver(const DiracOperator &D):_dirac_matrix(D.get_matrix()),_cgSolver(_dirac_matrix) {
+}
+
+FermionField CGSolver::solve(FermionField target, double tol, int max_iter ) {
+    auto target_vec = target.get_data();
+    FermionField::vector_type init_point(target_vec.size());
+    init_point.setZero();
+
+    auto solution = _cgSolver.solve(target_vec, init_point, tol, max_iter);
+    return {solution, target.get_mesh()};
 }
