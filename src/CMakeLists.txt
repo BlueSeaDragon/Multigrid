@@ -13,4 +13,8 @@ add_executable(Multigrid main.cpp
         dirac.h
         dirac.cpp
         Field.cpp
-        mesh.cpp)
+        mesh.cpp
+        GCR.cpp
+        GCR.h
+        MG.cpp
+        MG.h)
