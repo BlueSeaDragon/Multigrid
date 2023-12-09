@@ -17,4 +17,6 @@ add_executable(Multigrid main.cpp
         GCR.cpp
         GCR.h
         MG.cpp
-        MG.h)
+        MG.h
+        ConjugateGradient.h)
+

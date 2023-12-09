@@ -10,20 +10,27 @@
 #include <Eigen/Sparse>
 #include <Eigen/SparseLU>
 
+
+#include "ConjugateGradient.h"
+
+
 class DiracOperator {
 public:
     DiracOperator(Mesh* mesh, double const& mass, BosonField* b_field);
 
     FermionField operator()(FermionField f);
 
-    Eigen::SparseMatrix<std::complex<double>> get_matrix() const { return _big_d;}
+    typedef Eigen::SparseMatrix<std::complex<double>> matrix_type;
+
+    matrix_type get_matrix() const { return _big_d;}
+
 
 
 private:
     double _mass;
     Mesh* _mesh;
     BosonField* _b_field;
-    Eigen::SparseMatrix<std::complex<double>> _big_d;
+    matrix_type _big_d;
 
 };
 
@@ -32,8 +39,18 @@ public:
     DirectSolver(DiracOperator const& D);
     FermionField solve(FermionField target);
 private:
-    Eigen::SparseMatrix<std::complex<double>> _dirac_matrix;
-    Eigen::SparseLU<Eigen::SparseMatrix<std::complex<double>>, Eigen::COLAMDOrdering<int>> _solver;
+    DiracOperator::matrix_type _dirac_matrix;
+    Eigen::SparseLU<DiracOperator::matrix_type, Eigen::COLAMDOrdering<int>> _solver;
+};
+
+
+class CGSolver{
+public:
+    CGSolver(DiracOperator const& D);
+    FermionField solve(FermionField target, double tol = 1e-8, int max_iter = 10000);
+private:
+    DiracOperator::matrix_type _dirac_matrix;
+    ConjugateGradient<DiracOperator::matrix_type, FermionField::vector_type> _cgSolver;
 };
 
 
