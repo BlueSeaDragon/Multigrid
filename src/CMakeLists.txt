@@ -14,4 +14,9 @@ add_executable(Multigrid main.cpp
         dirac.cpp
         Field.cpp
         mesh.cpp
+        GCR.cpp
+        GCR.h
+        MG.cpp
+        MG.h
         ConjugateGradient.h)
+
