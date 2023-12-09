@@ -61,14 +61,14 @@ void conjugate_gradient(const MatrixType& mat, const Rhs& rhs, Dest& x,
   }
 
   VectorType p(n);
-  p = precond.solve(residual, 1e-10, 10000);      // initial search direction
+  p = precond.solve(residual);      // initial search direction
 
   VectorType z(n), tmp(n);
   RealScalar absNew = numext::real(residual.dot(p));  // the square of the absolute value of r scaled by invM
   Index i = 0;
   while(i < maxIters)
   {
-    tmp.noalias() = mat * p;                    // the bottleneck of the algorithm
+    tmp.noalias() = mat * p;                    // the bottleneck of the algorithmW
 
     Scalar alpha = absNew / p.dot(tmp);         // the amount we travel on dir
     x += alpha * p;                             // update solution
@@ -78,7 +78,7 @@ void conjugate_gradient(const MatrixType& mat, const Rhs& rhs, Dest& x,
     if(residualNorm2 < threshold)
       break;
     
-    z = precond.solve(residual, 1e-10, 10000);                // approximately solve for "A z = residual"
+    z = precond.solve(residual);                // approximately solve for "A z = residual"
 
     RealScalar absOld = absNew;
     absNew = numext::real(residual.dot(z));     // update the absolute value of r
