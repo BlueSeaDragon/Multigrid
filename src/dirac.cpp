@@ -159,7 +159,7 @@ FermionField DirectSolver::solve(FermionField target) {
 
 
 
-CGSolver::CGSolver(const DiracOperator &D):_dirac_matrix(D.get_matrix()),_cgSolver(_dirac_matrix) {
+CGSolver::CGSolver(const DiracOperator &D):_dirac_matrix(D.get_matrix()),_cgSolver() {
 }
 
 FermionField CGSolver::solve(FermionField target, double tol, int max_iter ) {
@@ -167,6 +167,7 @@ FermionField CGSolver::solve(FermionField target, double tol, int max_iter ) {
     FermionField::vector_type init_point(target_vec.size());
     init_point.setZero();
 
-    auto solution = _cgSolver.solve(target_vec, init_point, tol, max_iter);
+    auto solution = _cgSolver.solve(_dirac_matrix.transpose().conjugate()*_dirac_matrix, _dirac_matrix.transpose().conjugate()*target_vec, init_point, tol, max_iter);
+
     return {solution, target.get_mesh()};
 }

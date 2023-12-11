@@ -11,19 +11,19 @@
 template<typename matrix_type, typename vector_type>
 class ConjugateGradient {
 public:
-    ConjugateGradient(matrix_type const& Matrix):_matrix(Matrix){}
+    ConjugateGradient(){}
 
-    vector_type solve(vector_type const& rhs ,
+    vector_type solve(matrix_type const& matrix, vector_type const& rhs ,
                       vector_type const& start_point,
                       double tolerance = 1e-10,
                       int max_iter = 10000){
-        max_iter = std::max(max_iter, int(rhs.size()));
+        max_iter = std::min(max_iter, int(rhs.size()));
 
         vector_type x(start_point);// x
-        vector_type r(_matrix*x - rhs); //r
+        vector_type r(rhs - matrix*x); //r
         vector_type r_temp(r);// temporary value for r_(k+1)
         vector_type p(r);//p
-        vector_type q(_matrix*p);// q = Ap (to avoid multiple matrix vector products)
+        vector_type q(matrix*p);// q = Ap (to avoid multiple matrix vector products)
         std::complex<double> alpha = 0;//alpha
         std::complex<double> beta = 0;//beta
 
@@ -37,14 +37,11 @@ public:
             beta = r_temp.dot(r_temp)/r.dot(r);// beta_k = <r_(k+1), r_(k+1)> / < r_k, r_k>
             std::swap(r, r_temp); // we don't need r_k anymore, change r = r_(k+1)
             p = r + beta*p;// p_(k+1) = r_(k+1) + beta_k*p_k
-            q = _matrix*p; // update q_(k+1) = A*p_(k+1)
+            q = matrix * p; // update q_(k+1) = A*p_(k+1)
         }
 
         return x;
     }
-
-private:
-    matrix_type const& _matrix;
 };
 
 
