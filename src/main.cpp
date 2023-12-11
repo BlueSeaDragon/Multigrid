@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
 
     start = std::chrono::high_resolution_clock::now();
 
-    auto solution2 = solver.solve(phi);
+    auto solution2 = cgSolver.solve(phi);
 
     end = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
