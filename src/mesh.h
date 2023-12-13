@@ -17,17 +17,18 @@ public:
 
     // #subblocks * #indices
     std::vector<std::vector<int>> block(int block_size){
-        assert(_dim % block_size ==0);
+        assert(_dim % block_size == 0);
         int n_blocks = _dim / block_size;
         std::vector<std::vector<int>> blocks(n_blocks*n_blocks);
-        for(int i = 0; i <_dim;++i){
+        for(int i = 0; i <_dim; ++i){
             for (int j = 0; j < _dim; ++j){
                 int i_block = i/block_size;
                 int j_block = j/block_size;
-                blocks[i*n_blocks +j].emplace_back(loc_index({i,j}));
+                blocks[i_block*n_blocks + j_block].emplace_back(loc_index({i,j}));
 
             }
         }
+        return blocks;
     }
     // number of grid points
     int get_size() const;
