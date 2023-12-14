@@ -56,34 +56,39 @@ void MG::compute_prolongation(Eigen::SparseMatrix<std::complex<double>> M, int c
             for (int j = 0; j < 1; j++) {
                 x_old = x;
                 // 1. pre-smoothing: forward solver (space Vcorr_total_h, fine)
-                /* // the BiCGSTAB solver
+                /*
+                // the BiCGSTAB solver
                 Eigen::BiCGSTAB<Eigen::SparseMatrix<std::complex<double>>> biCG;
                 biCG.compute(M_h);
                 Eigen::VectorXcd pre_corr_h = biCG.solve(M_h * x);
                 */
-                //GaussSeidel GS;
-                //Eigen::VectorXcd pre_corr_h = GS.solve_forward(M_h, -M_h * x, x, 1e-10, 10);
+
+                GaussSeidel GS;
+                Eigen::VectorXcd pre_corr_h = GS.solve_forward(M_h, M_h * x, x, 1e-10, 1);
                 //Eigen::VectorXcd pre_corr_h = M_h.triangularView<Eigen::Lower>().solve(M_h * x);
-                // Eigen::VectorXcd pre_corr_h = _K.solve(M_h.triangularView<Eigen::Lower>(), M_h * x, x, 1e-10, 1);
-                Eigen::VectorXcd pre_corr_h = omega * (M_h * x);
+                //Eigen::VectorXcd pre_corr_h = _K.solve(M_h.triangularView<Eigen::Lower>(), M_h * x, x, 1e-10, 1);
+                //Eigen::VectorXcd pre_corr_h = omega * (M_h * x);
                 x -= pre_corr_h;
 
 
                 // 2. post-smoothing: backward solver (space V_h, fine)
-                /* // BiCGSTAB
-                Eigen::BiCGSTAB<Eigen::SparseMatrix<std::complex<double>>> biCG;
+                /*
+                // BiCGSTAB
+                // Eigen::BiCGSTAB<Eigen::SparseMatrix<std::complex<double>>> biCG;
                 biCG.compute(M_h);
                 Eigen::VectorXcd post_corr_h = biCG.solve(M_h * x);
                 */
-                //Eigen::VectorXcd post_corr_h = GS.solve_backward(M_h, M_h * x, x, 1e-10, 10);
+                Eigen::VectorXcd post_corr_h = GS.solve_backward(M_h, M_h * x, x, 1e-10, 1);
                 //Eigen::VectorXcd post_corr_h = M_h.triangularView<Eigen::Upper>().solve(M_h * x);
-                //Eigen::VectorXcd post_corr_h = _K.solve(M_h.triangularView<Eigen::Upper>(), M_h * x, x, 1e-10, 1);
-                Eigen::VectorXcd post_corr_h = omega * (M_h * x);
+                // Eigen::VectorXcd post_corr_h = _K.solve(M_h.triangularView<Eigen::Upper>(), M_h * x, x, 1e-10, 1);
+                //Eigen::VectorXcd post_corr_h = omega * (M_h * x);
 
                 x -= post_corr_h;
             }
                 //corr_total = x - x_old;
-            if (((x-x_old).dot(M_h*(x-x_old))).real() > 0.1 * (x_old.dot(M_h*x_old)).real()) {
+                //use fac = 0.012 for cg triangular
+                // use fac = 0.034 for triangular solve
+            if (x.dot(M_h*x).real() > 0.0066 * (x_old.dot(M_h*x_old)).real()) {
                 //_P[i].resize(size, (dir_count+1) * blocks[i].size());
                 //Eigen::VectorXcd x_new(blocks[i].size(), dim_count[i]);
                 ++dim_count[i];
@@ -93,7 +98,7 @@ void MG::compute_prolongation(Eigen::SparseMatrix<std::complex<double>> M, int c
                     // candidate error
                     Eigen::VectorXcd x_l(blocks[i][k].size() * 2);
                     for (int j = 0; j < blocks[i][k].size(); ++j) {
-                        auto idx = blocks[i][k][j];
+                        int idx = blocks[i][k][j];
                         x_l(2*j) = x(2*idx);
                         x_l(2*j+1) = x(2*idx + 1);
                     }
@@ -111,9 +116,10 @@ void MG::compute_prolongation(Eigen::SparseMatrix<std::complex<double>> M, int c
 
                     // attach normalised new direction
                     _P[i][k].resize(x_l.size(), dim_count[i]);
-                    //_P[i][k].col(dim_count[i] - 1) = (x_l / x_l.norm());
-                    _P[i][k].col(dim_count[i] - 1) = (x_l);
+                    _P[i][k].col(dim_count[i] - 1) = (x_l / x_l.norm());
+                    //_P[i][k].col(dim_count[i] - 1) = (x_l);
                 }
+                std::cout<< dim_count[0] <<" error vector(s) computation complete \n";
             }
             else {
                 break;
@@ -141,13 +147,12 @@ void MG::compute_prolongation(Eigen::SparseMatrix<std::complex<double>> M, int c
     for(int i=0; i<_level; i++)
     for (int k = 0; k<_P[i].size(); k++) {
         Eigen::HouseholderQR<Eigen::MatrixXcd> qr(_P[i][k]);
-        Eigen::MatrixXcd tmp = qr.householderQ() * Eigen::MatrixXcd::Identity(_P[i][k].rows(), _P[i][k].cols());
-        _P[i][k] = tmp;
+        _P[i][k] = qr.householderQ() * Eigen::MatrixXcd::Identity(_P[i][k].rows(), _P[i][k].cols());
     }
     _map = blocks;
     std::cout<< "1) number of sub-blocks at level 1 is " << _P[0].size() << std::endl;
     std::cout<< "2) dimension of a sub-block is " << _P[0][0].rows() << std::endl;
-    std::cout<< "3) number of eigenbasis per sub-block is " << _P[0][55].cols() << std::endl;
+    std::cout<< "3) number of eigenbasis per sub-block is " << _P[0][0].cols() << std::endl;
 }
 
 
@@ -155,15 +160,15 @@ Eigen::VectorXcd MG::recursive_solve_vcycle(Eigen::VectorXcd y, Eigen::VectorXcd
                                         Eigen::SparseMatrix<std::complex<double>> M, int level) {
     if (level==0) {
         // direct solve
-        x = _CG.solve(M, y, x);
+        x = _CG.solve(M, y, x, 1e-14, 4);
     }
     else {
         double omega = 0.01;
         // 1. pre-smoothing: forward solver (space V_h, fine)
         //Eigen::VectorXcd pre_corr_h = _K.solve(M.triangularView<Eigen::Lower>(), y - M * x, x,1e-10,1);
-        Eigen::VectorXcd pre_corr_h = omega*(y-M * x);
-        //GaussSeidel GS;
-        // Eigen::VectorXcd pre_corr_h = GS.solve_forward(M, y - M * x, x, 1e-10, 1);
+        //Eigen::VectorXcd pre_corr_h = omega*(y-M * x);
+        GaussSeidel GS;
+        Eigen::VectorXcd pre_corr_h = GS.solve_forward(M, y - M * x, x, 1e-10, 1);
         //Eigen::VectorXcd pre_corr_h = M.triangularView<Eigen::Lower>().solve(y - M * x);
 
         x += pre_corr_h;
@@ -187,8 +192,8 @@ Eigen::VectorXcd MG::recursive_solve_vcycle(Eigen::VectorXcd y, Eigen::VectorXcd
 
             //keep relevant r_h
             for (int el=0; el<blocksize; el++) {
-                r_H_local(2*el) = r_h(2 *loc_to_glob(el));
-                r_H_local(2*el+1) = r_h(2*loc_to_glob(el)+1);
+                r_H_local(2*el) = r_h(2 * loc_to_glob(el));
+                r_H_local(2*el+1) = r_h(2 * loc_to_glob(el)+1);
             }
 
             // find block-local M (geometric coarsening)
@@ -206,14 +211,17 @@ Eigen::VectorXcd MG::recursive_solve_vcycle(Eigen::VectorXcd y, Eigen::VectorXcd
             Eigen::MatrixXcd M_H_local = _P[level-1][block_ind].transpose().conjugate() * M_h_local * _P[level-1][block_ind];
 
             // recursive call -> bloc-level correction
-            Eigen::VectorXcd coarse_corr_H_local(_P[level-1][block_ind].cols());
-            coarse_corr_H_local = recursive_solve_vcycle(_P[level-1][block_ind].transpose().conjugate() * r_H_local, coarse_corr_H_local, M_H_local.sparseView(), level-1);
-            Eigen::VectorXcd coarse_corr_h = _P[level-1][block_ind] * coarse_corr_H_local;
+            Eigen::VectorXcd coarse_corr_H(20);
+            coarse_corr_H.setRandom();
+            coarse_corr_H = recursive_solve_vcycle(_P[level-1][block_ind].transpose().conjugate() * r_H_local, coarse_corr_H, M_H_local.sparseView(), level-1);
+            Eigen::VectorXcd coarse_corr_h = _P[level-1][block_ind] * coarse_corr_H;
 
             // update global x
-            for (int el=0; el<blocksize; el++) {
-                x(loc_to_glob(el) * 2) += coarse_corr_h(el * 2);
-                x(loc_to_glob(el) * 2 + 1) += coarse_corr_h(el * 2 + 1);
+            if (coarse_corr_h.norm() == coarse_corr_h.norm()) {
+                for (int el = 0; el < blocksize; el++) {
+                    x(loc_to_glob(el) * 2) += coarse_corr_h(el * 2);
+                    x(loc_to_glob(el) * 2 + 1) += coarse_corr_h(el * 2 + 1);
+                }
             }
 
             //r_H.push_back();
@@ -230,8 +238,8 @@ Eigen::VectorXcd MG::recursive_solve_vcycle(Eigen::VectorXcd y, Eigen::VectorXcd
 
         // 3. post-smoothing: backward solver (space V_h, fine)
         //Eigen::VectorXcd post_corr_h = _K.solve(M.triangularView<Eigen::Upper>(), y - M * x, x,1e-10,1);
-        Eigen::VectorXcd post_corr_h = omega*(y-M * x);
-        //Eigen::VectorXcd post_corr_h = GS.solve_backward(M, y - M * x, x, 1e-10, 1);
+        //Eigen::VectorXcd post_corr_h = omega*(y-M * x);
+        Eigen::VectorXcd post_corr_h = GS.solve_backward(M, y - M * x, x, 1e-10, 1);
         //Eigen::VectorXcd post_corr_h = M.triangularView<Eigen::Lower>().solve(y - M * x);
         x += post_corr_h;
     }

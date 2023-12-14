@@ -16,7 +16,7 @@
 int main(int argc, char* argv[]) {
 
     // process args
-    int mesh_size = 32;
+    int mesh_size = 64;
     for(int i= 1; i < argc; ++i){
         std::string arg = std::string(argv[i]);
         std::string key = arg.substr(0, arg.find('='));
@@ -93,12 +93,14 @@ int main(int argc, char* argv[]) {
 
     std::cout << "----------------------------------" << std::endl;
     std::cout << "--- Testing adaptive multigrid ---" << std::endl;
+    std::cout<< "Begin prolongation operator precomputation:" << std::endl;
     start = std::chrono::high_resolution_clock::now();
     MG mgSOLVER((d.get_matrix().transpose().conjugate()*d.get_matrix()), 1, 4);
     end = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
     std::cout << "Solver built in " << duration << " ms" << std::endl;
 
+    std::cout<< "\nBegin main computation:\n";
     start = std::chrono::high_resolution_clock::now();
     Eigen::VectorXcd sol3 = phi.get_data();
     sol3.setZero();

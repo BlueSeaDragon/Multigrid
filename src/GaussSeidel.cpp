@@ -14,7 +14,7 @@ Eigen::VectorXcd GaussSeidel::solve_forward(Eigen::SparseMatrix<std::complex<dou
         int const N = M.rows();
         for (int i=0; i< N; i++) {
             std::complex<double> corr = 0.;
-            for (int j = 0; j < i; j++) {
+            for (int j = 0; j <= i; j++) {
                 corr += M.coeff(i, j) * x(j);
             }
             corr = 1./M.coeff(i, i) * (rhs(i) - corr);
@@ -34,7 +34,7 @@ Eigen::VectorXcd GaussSeidel::solve_backward(Eigen::SparseMatrix<std::complex<do
         int const N = M.rows();
         for (int i=N-1; i>=0; i--) {
             std::complex<double> corr = 0.;
-            for (int j = N-1; j > i; j--) {
+            for (int j = N-1; j >= i; j--) {
                 corr += M.coeff(i, j) * x(j);
             }
             corr = 1./M.coeff(i, i) * (rhs(i) - corr);
