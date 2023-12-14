@@ -1,4 +1,4 @@
 # Adaptive Multigrid
-This is supposedly an Adaptive Multigrid Algorithm for the 2D Wilson-Dirac operator (Schwinger Model), although at the moment it is neither adaptive nor multigrid. I am also not sure if I have input the correct Dirac operator. 
+This is an Adaptive Multigrid (AMG) Algorithm for the 2D Wilson-Dirac operator (Schwinger Model). It is based on the "Adaptive Smoothed Aggregate Multigrid" method, where both geometric (sub-blocking) and algebraic (largest eigenvectors dimensional reduction) coarsening are applied. Our implementation uses Gauss-Seidel (GS) as the smoothing operator and Conjugate Gradient (CG) as the direct solver for small sub-blocks.
 
-At least it runs.
+The next step would be to precondition CG with AMG, such that long and short-range error modes can be effectively eliminated. Another issue is that the algorithm only applies to symmetric (hermitian) positive definite matrices (i.e. $D^H D$, loss of sparsity). A more general solver that works on non-hermitian matrices could be developed to conserve sparsity. 
