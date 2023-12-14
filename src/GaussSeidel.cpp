@@ -17,12 +17,13 @@ Eigen::VectorXcd GaussSeidel::solve_forward(Eigen::SparseMatrix<std::complex<dou
             for (int j = 0; j < i; j++) {
                 corr += M.coeff(i, j) * x(j);
             }
-            corr = M.coeff(i, i) * (rhs(i) - corr);
+            corr = 1./M.coeff(i, i) * (rhs(i) - corr);
             x(i) += corr;
             deltanorm += (conj(corr) * corr).real();
         }
         count ++;
-    } while (deltanorm < TOL * x.norm() && count <max_iterations);
+    } while (std::sqrt(deltanorm) > TOL * x.norm() && count <max_iterations);
+    return x;
 }
 
 Eigen::VectorXcd GaussSeidel::solve_backward(Eigen::SparseMatrix<std::complex<double>> M, Eigen::VectorXcd rhs, Eigen::VectorXcd x, double TOL, int max_iterations) {
@@ -36,10 +37,11 @@ Eigen::VectorXcd GaussSeidel::solve_backward(Eigen::SparseMatrix<std::complex<do
             for (int j = N-1; j > i; j--) {
                 corr += M.coeff(i, j) * x(j);
             }
-            corr = M.coeff(i, i) * (rhs(i) - corr);
+            corr = 1./M.coeff(i, i) * (rhs(i) - corr);
             x(i) += corr;
             deltanorm += (conj(corr) * corr).real();
         }
         count ++;
-    } while (deltanorm < TOL * x.norm() && count <max_iterations);
+    } while (deltanorm > TOL * x.norm() && count <max_iterations);
+    return x;
 }

@@ -31,7 +31,7 @@ void MG::compute_prolongation(Eigen::SparseMatrix<std::complex<double>> M, int c
     int dim = M.rows();
     for(int i = 0; i <_level; i++){
         // meshes.emplace_back(Mesh(dim));
-        Mesh mesh_tmp(std::sqrt(dim/2));
+        Mesh mesh_tmp(std::sqrt(dim/2.));
         auto block = mesh_tmp.block(coarsening);
         blocks[i] = block;
         dim /= coarsening;
@@ -40,8 +40,8 @@ void MG::compute_prolongation(Eigen::SparseMatrix<std::complex<double>> M, int c
         _P.emplace_back(tmp);
     }
     int size = M.cols();
-    std::vector<std::vector<Eigen::MatrixXcd>> error;
-    for( int m = 0; m < size, dim_count[0]<20; m++){
+    // std::vector<std::vector<Eigen::MatrixXcd>> error;
+    do{
         Eigen::SparseMatrix<std::complex<double>> M_h = M;
         Eigen::VectorXcd x = Eigen::VectorXcd::Random(size); // random guess x
         Eigen::VectorXcd y = Eigen::VectorXcd::Zero(size); // rhs = 0
@@ -62,10 +62,10 @@ void MG::compute_prolongation(Eigen::SparseMatrix<std::complex<double>> M, int c
                 Eigen::VectorXcd pre_corr_h = biCG.solve(M_h * x);
                 */
                 //GaussSeidel GS;
-                //Eigen::VectorXcd pre_corr_h = GS.solve_forward(M_h, M_h * x, x, 1e-10,1);
-                Eigen::VectorXcd pre_corr_h = M_h.triangularView<Eigen::Lower>().solve(M_h * x);
+                //Eigen::VectorXcd pre_corr_h = GS.solve_forward(M_h, -M_h * x, x, 1e-10, 10);
+                //Eigen::VectorXcd pre_corr_h = M_h.triangularView<Eigen::Lower>().solve(M_h * x);
                 // Eigen::VectorXcd pre_corr_h = _K.solve(M_h.triangularView<Eigen::Lower>(), M_h * x, x, 1e-10, 1);
-                //Eigen::VectorXcd pre_corr_h = omega * (M_h * x);
+                Eigen::VectorXcd pre_corr_h = omega * (M_h * x);
                 x -= pre_corr_h;
 
 
@@ -75,15 +75,15 @@ void MG::compute_prolongation(Eigen::SparseMatrix<std::complex<double>> M, int c
                 biCG.compute(M_h);
                 Eigen::VectorXcd post_corr_h = biCG.solve(M_h * x);
                 */
-                //Eigen::VectorXcd post_corr_h = GS.solve_backward(M_h, M_h * x, x, 1e-10,1);
-                Eigen::VectorXcd post_corr_h = M_h.triangularView<Eigen::Upper>().solve(M_h * x);
+                //Eigen::VectorXcd post_corr_h = GS.solve_backward(M_h, M_h * x, x, 1e-10, 10);
+                //Eigen::VectorXcd post_corr_h = M_h.triangularView<Eigen::Upper>().solve(M_h * x);
                 //Eigen::VectorXcd post_corr_h = _K.solve(M_h.triangularView<Eigen::Upper>(), M_h * x, x, 1e-10, 1);
-                //Eigen::VectorXcd post_corr_h = omega * (M_h * x);
+                Eigen::VectorXcd post_corr_h = omega * (M_h * x);
 
                 x -= post_corr_h;
             }
                 //corr_total = x - x_old;
-            if (((x-x_old).dot(M_h*(x-x_old))).real() > 0.5 * (x_old.dot(M_h*x_old)).real()) {
+            if (((x-x_old).dot(M_h*(x-x_old))).real() > 0.1 * (x_old.dot(M_h*x_old)).real()) {
                 //_P[i].resize(size, (dir_count+1) * blocks[i].size());
                 //Eigen::VectorXcd x_new(blocks[i].size(), dim_count[i]);
                 ++dim_count[i];
@@ -134,17 +134,20 @@ void MG::compute_prolongation(Eigen::SparseMatrix<std::complex<double>> M, int c
             _P.emplace_back(error_mat);
             M_h = (_P[i].transpose().conjugate() * M_h * _P[i]).sparseView();
             size = M_h.cols();*/
-            std::cout<< "number of dimensions at level " << i << " is " << size << std::endl;
         }
-    }
+    } while (_P[0][0].cols() < 20);
     // std::reverse(_P.begin(), _P.end());
     // make unitary
     for(int i=0; i<_level; i++)
     for (int k = 0; k<_P[i].size(); k++) {
         Eigen::HouseholderQR<Eigen::MatrixXcd> qr(_P[i][k]);
-        _P[i][k] = qr.householderQ();
+        Eigen::MatrixXcd tmp = qr.householderQ() * Eigen::MatrixXcd::Identity(_P[i][k].rows(), _P[i][k].cols());
+        _P[i][k] = tmp;
     }
     _map = blocks;
+    std::cout<< "1) number of sub-blocks at level 1 is " << _P[0].size() << std::endl;
+    std::cout<< "2) dimension of a sub-block is " << _P[0][0].rows() << std::endl;
+    std::cout<< "3) number of eigenbasis per sub-block is " << _P[0][55].cols() << std::endl;
 }
 
 
@@ -158,10 +161,10 @@ Eigen::VectorXcd MG::recursive_solve_vcycle(Eigen::VectorXcd y, Eigen::VectorXcd
         double omega = 0.01;
         // 1. pre-smoothing: forward solver (space V_h, fine)
         //Eigen::VectorXcd pre_corr_h = _K.solve(M.triangularView<Eigen::Lower>(), y - M * x, x,1e-10,1);
-        //Eigen::VectorXcd pre_corr_h = omega*(y-M * x);
+        Eigen::VectorXcd pre_corr_h = omega*(y-M * x);
         //GaussSeidel GS;
         // Eigen::VectorXcd pre_corr_h = GS.solve_forward(M, y - M * x, x, 1e-10, 1);
-        Eigen::VectorXcd pre_corr_h = M.triangularView<Eigen::Lower>().solve(y - M * x);
+        //Eigen::VectorXcd pre_corr_h = M.triangularView<Eigen::Lower>().solve(y - M * x);
 
         x += pre_corr_h;
 
@@ -171,41 +174,46 @@ Eigen::VectorXcd MG::recursive_solve_vcycle(Eigen::VectorXcd y, Eigen::VectorXcd
         // project residual onto coarse grid
         // Eigen::VectorXcd r_H = _P[level-1].transpose().conjugate() * r_h;
         std::vector<Eigen::VectorXcd> r_H;
-        for (int block_ind =0; block_ind < _P[level].size(); block_ind++) {
+        for (int block_ind =0; block_ind < _P[level-1].size(); block_ind++) {
             int const blocksize = _coarsening * _coarsening;
             // local residual vector
-            Eigen::VectorXcd r_H_local(blocksize);
+            Eigen::VectorXcd r_H_local(blocksize*2);
 
             // local to global map
             Eigen::VectorXi loc_to_glob(blocksize);
             for (int el = 0; el < blocksize; el ++) {
-                loc_to_glob(el) = _map[level][block_ind][el];
+                loc_to_glob(el) = _map[level-1][block_ind][el];
             }
 
             //keep relevant r_h
             for (int el=0; el<blocksize; el++) {
-                r_H_local(el) = r_h(loc_to_glob(el));
+                r_H_local(2*el) = r_h(2 *loc_to_glob(el));
+                r_H_local(2*el+1) = r_h(2*loc_to_glob(el)+1);
             }
 
             // find block-local M (geometric coarsening)
-            Eigen::MatrixXcd M_h_local(blocksize, blocksize);
+            Eigen::MatrixXcd M_h_local(blocksize * 2, blocksize * 2);
             for (int row=0; row<blocksize; row++) {
                 for (int col = 0; col < blocksize; col++) {
-                    M_h_local(row, col) = M.coeff(loc_to_glob(row), loc_to_glob(col));
+                    M_h_local(2 * row, 2 * col) = M.coeff(2 * loc_to_glob(row), 2 * loc_to_glob(col));
+                    M_h_local(2 * row + 1, 2 * col) = M.coeff(2 * loc_to_glob(row) + 1, 2 * loc_to_glob(col));
+                    M_h_local(2 * row, 2 * col + 1) = M.coeff(2 * loc_to_glob(row), 2 * loc_to_glob(col) + 1);
+                    M_h_local(2 * row + 1, 2 * col + 1) = M.coeff(2 * loc_to_glob(row) + 1, 2 * loc_to_glob(col) + 1);
                 }
             }
 
             // projection onto coarse grid (algebraic coarsening)
-            Eigen::MatrixXcd M_H_local = _P[level][block_ind].transpose().conjugate() * M_h_local * _P[level][block_ind];
+            Eigen::MatrixXcd M_H_local = _P[level-1][block_ind].transpose().conjugate() * M_h_local * _P[level-1][block_ind];
 
             // recursive call -> bloc-level correction
-            Eigen::VectorXcd coarse_corr_H_local(_P[level][block_ind].cols());
-            coarse_corr_H_local = recursive_solve_vcycle(_P[level][block_ind].transpose().conjugate() * r_H_local, coarse_corr_H_local, M_H_local.sparseView(), level-1);
-            coarse_corr_H_local = _P[level][block_ind] * coarse_corr_H_local;
+            Eigen::VectorXcd coarse_corr_H_local(_P[level-1][block_ind].cols());
+            coarse_corr_H_local = recursive_solve_vcycle(_P[level-1][block_ind].transpose().conjugate() * r_H_local, coarse_corr_H_local, M_H_local.sparseView(), level-1);
+            Eigen::VectorXcd coarse_corr_h = _P[level-1][block_ind] * coarse_corr_H_local;
 
             // update global x
             for (int el=0; el<blocksize; el++) {
-                x(loc_to_glob(el)) += coarse_corr_H_local(el);
+                x(loc_to_glob(el) * 2) += coarse_corr_h(el * 2);
+                x(loc_to_glob(el) * 2 + 1) += coarse_corr_h(el * 2 + 1);
             }
 
             //r_H.push_back();
@@ -222,9 +230,9 @@ Eigen::VectorXcd MG::recursive_solve_vcycle(Eigen::VectorXcd y, Eigen::VectorXcd
 
         // 3. post-smoothing: backward solver (space V_h, fine)
         //Eigen::VectorXcd post_corr_h = _K.solve(M.triangularView<Eigen::Upper>(), y - M * x, x,1e-10,1);
-        //Eigen::VectorXcd post_corr_h = omega*(y-M * x);
+        Eigen::VectorXcd post_corr_h = omega*(y-M * x);
         //Eigen::VectorXcd post_corr_h = GS.solve_backward(M, y - M * x, x, 1e-10, 1);
-        Eigen::VectorXcd post_corr_h = M.triangularView<Eigen::Lower>().solve(y - M * x);
+        //Eigen::VectorXcd post_corr_h = M.triangularView<Eigen::Lower>().solve(y - M * x);
         x += post_corr_h;
     }
 

@@ -16,7 +16,7 @@
 int main(int argc, char* argv[]) {
 
     // process args
-    int mesh_size = 8;
+    int mesh_size = 32;
     for(int i= 1; i < argc; ++i){
         std::string arg = std::string(argv[i]);
         std::string key = arg.substr(0, arg.find('='));
@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
     //U.printA();
     std::cout<< "Initial charge Q = " << U.Q() << std::endl;
 
-    DiracOperator d(&mesh,0.,&U);
+    DiracOperator d(&mesh, 1.,&U);
 
     std::cout << "----------------------------------" << std::endl;
     std::cout << "--- Testing Direct Solver ---" << std::endl;
@@ -90,32 +90,6 @@ int main(int argc, char* argv[]) {
     FermionField::vector_type sol_diff = solution.get_data() - solution2.get_data();
     std::cout << "Difference between solutions: " << sol_diff.norm()<< std::endl;
 
-    std::cout << "----------------------------------" << std::endl;
-    std::cout << "--- Testing conjugate gradient ---" << std::endl;
-
-    start = std::chrono::high_resolution_clock::now();
-    CGSolver cgSolver1(d);
-    end = std::chrono::high_resolution_clock::now();
-    duration = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
-    std::cout << "Solver built in " << duration << " ms" << std::endl;
-
-
-    start = std::chrono::high_resolution_clock::now();
-
-    auto solution21 = solver.solve(phi);
-
-    end = std::chrono::high_resolution_clock::now();
-    duration = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
-
-    //std::cout << "Solution: " << solution.get_data()<<std::endl;
-    std::cout<< "Solution computed in " << duration  << "ms" << std::endl;
-
-    FermionField::vector_type r21 = d.get_matrix() * solution21.get_data() - phi.get_data();
-    std::cout << "residual of norm " << r2.norm() << std::endl;
-
-    FermionField::vector_type sol_diff21 = solution.get_data() - solution21.get_data();
-    std::cout << "Difference between solutions: " << sol_diff21.norm()<< std::endl;
-
 
     std::cout << "----------------------------------" << std::endl;
     std::cout << "--- Testing adaptive multigrid ---" << std::endl;
@@ -135,8 +109,9 @@ int main(int argc, char* argv[]) {
     std::cout<< "Solution computed in " << duration  << "ms" << std::endl;
     FermionField::vector_type r3 = d.get_matrix() * sol3 - phi.get_data();
     std::cout << "residual of norm " << r3.norm() << std::endl;
-    FermionField::vector_type sol_diff2 = sol3 - solution2.get_data();
+    FermionField::vector_type sol_diff2 = sol3 - solution.get_data();
     std::cout << "Difference between solutions: " << sol_diff2.norm()<< std::endl;
+    std::cout << "Relative difference between solutions: " << sol_diff2.norm() / solution.get_data().norm() * 100 << "%" << std::endl;
 
     return 0;
 }
