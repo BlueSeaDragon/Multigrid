@@ -9,6 +9,7 @@ int Mesh::get_neighbour(int const& index, int const& direction_t, int const& dir
     return (index + direction_t*_dim + direction_x + get_size())  % get_size();
 }
 
+
 Eigen::Vector4i Mesh::get_neighbours(int const& index) {
     Eigen::Vector4i output;
     output << get_neighbour(index, 1, 0),
