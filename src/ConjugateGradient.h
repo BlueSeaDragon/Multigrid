@@ -20,7 +20,9 @@ public:
         max_iter = std::min(max_iter, int(rhs.size()));
 
         vector_type x(start_point);// x
+
         vector_type r(rhs - matrix*x); //r
+        
         vector_type r_temp(r);// temporary value for r_(k+1)
         vector_type p(r);//p
         vector_type q(matrix*p);// q = Ap (to avoid multiple matrix vector products)
